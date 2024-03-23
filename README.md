@@ -9,8 +9,9 @@
 * [x] Optional leading zeros.
 * [x] Displaying numbers in a clever way.
 * [x] Static brightness control.
-* [x] Time zone management with automatic ST support.
+* [x] Time zone management with automatic DST support.
 * [x] OTA of Arduino IDE. Password is the same as the name of the AP.
+* [ ] Drop down choice as time zone selector (instead of the current simple tex box)
 * [ ] Find out why firmware update via the web UI doesn't work.
 * [ ] Automatic brightness controll.
 * [ ] Password protected web UI.
@@ -41,7 +42,7 @@ There is an unplaced connector with 6 pins for programming:
 
 Sixth pin is the closest one to the ESP12-f microcontroller.
 
-After flashing your clock, at the first boot, wifi AP turns on under the name of *halclock....*. SSID is fixed but the second part depends on the MAC address of the microcontroller. There has a hardcoded magic password: *passoword*. AP also turns on if WiFi client connection fails.
+After flashing your clock, at the first boot, wifi AP turns on under the name of *halclock....*  . SSID is fixed but the second part depends on the MAC address of the microcontroller. There has a hardcoded magic password: *password*. AP also turns on if WiFi client connection fails.
 
 ![main](docs/images/programming_interface.jpg)
 
