@@ -228,7 +228,7 @@ void menuSetup() {
 
   char tmp_brightness[5];
   itoa(config.brightness, tmp_brightness, 10);
-  new (&brightness) WiFiManagerParameter("brightness", "Brightness:", tmp_brightness, sizeof(tmp_brightness));
+  new (&brightness) WiFiManagerParameter("brightness", "Brightness:", tmp_brightness, sizeof(tmp_brightness), "placeholder=\"Custom Field Placeholder\" type=\"number\" min=\"0\" max=\"255\"");
   
   wm.addParameter(&device_name);
   wm.addParameter(&ntp_server);
