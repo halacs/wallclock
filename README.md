@@ -1,5 +1,9 @@
 **ABSOLUTELY NO WARRANTY! USE AT YOUR OWN RISK!**
 
+# Summary
+
+It is worth to change factory firmware on your clock under the name of "Baiyangshu 1902 Wifi Clock K2 02" if the always on Wifi access point bothers you too or the missing automatic day light saving capability or if you just simply want to use an open-source software you can extend with any features whenever you need something new.
+
 # Features of Halacs's firmware
 * [x] Web user interface.
 * [x] Wifi AP turns off after configuration.
@@ -27,7 +31,7 @@ The PCB is nice and clean, simple to program. Full schematic can be found [here]
 
 An ESP12-F microcontroller controls the display via a serial-to-paralel shift register array consists of four 74HC595D chip. Each segment made of 4 parallel LEDs. Second LEDs are also controlled from the array.
 
-There is a DS3231SM Real Time Clock (RTC) chip managed via I2C. It has a temperature sensor with +/- 3 C precision. Original firmware offers displaing temperature but it never mentions the precision of the sensor which was originally designed to keep the clock precise within the RTC chip. No other temperature sensore on the PCB.
+There is a DS3231SM Real Time Clock (RTC) chip managed via I2C. It has a temperature sensor with +/- 3 C precision. Original firmware offers displaying temperature but it never mentions the precision of the sensor which was originally designed to keep the clock precise within the RTC chip. No other temperature sensore on the PCB.
 
 Display brightness can be set by PWM via the Output Enable (OE) pin of the shift registers. There is an environment light sensor too connected to the ADC pin of the ESP. It can help to set the right brightness if static one is not fit for your needs.
 
@@ -40,9 +44,9 @@ There is an unplaced connector with 6 pins for programming:
 5. TXD0
 6. +5V
 
-Sixth pin is the closest one to the ESP12-f microcontroller.
+Sixth pin is the closest one to the ESP12-F microcontroller.
 
-After flashing your clock, at the first boot, wifi AP turns on under the name of *halclock....*  . SSID is fixed but the second part depends on the MAC address of the microcontroller. There has a hardcoded magic password: *password*. AP also turns on if WiFi client connection fails.
+After flashing your clock, at the first boot, WiFi AP turns on under the name of *halclock....*  . SSID is fixed but the second part depends on the MAC address of the microcontroller. There has a hardcoded magic password: *password*. AP also turns on if WiFi client connection fails.
 
 ![main](docs/images/programming_interface.jpg)
 
