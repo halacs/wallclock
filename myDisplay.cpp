@@ -106,7 +106,7 @@ void show(byte digit1, byte digit2, byte digit3, byte digit4, bool second, bool 
 
   sendByte(digit1, second, true, doItSmart1);
   sendByte(digit2, second, false, false);
-  sendByte(digit3, second, true, doItSmart2);
+  sendByte(digit3, second, false, doItSmart2);
   sendByte(digit4, second, false, false);
   
   allDigitsToStorageRegisters();
