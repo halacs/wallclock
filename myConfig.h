@@ -51,4 +51,4 @@ each positive transition of the shift register clock (SHCP).
 */
 #define SR_SER 13   // serial input (DS)
 
-#endif MY_CONFIG_H
+#endif
