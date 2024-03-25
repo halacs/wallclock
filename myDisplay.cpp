@@ -6,7 +6,7 @@ extern Config config;
 
 unsigned long displayMtime = 0;
 void syncDisplayScheduler() {
-  if(millis()-displayMtime >= 1000 ){
+  if(millis()-displayMtime >= 500 ){  // update display twice in a second
     updateDisplay();
     displayMtime = millis();
   }
@@ -97,7 +97,7 @@ void sendByte(byte digitn, bool second, bool leadingDigit, bool clever) {
 }
 
 void show(byte digit1, byte digit2, byte digit3, byte digit4, bool second, bool clever) {
-  //Serial.printf("Writing to display: %d%d:%d%d (SECOND %s)\n", digit1, digit2, digit3, digit4, second ? "ON" : "OFF");
+  Serial.printf("Writing to display: %d%d:%d%d (SECOND %s)\n", digit1, digit2, digit3, digit4, second ? "ON" : "OFF");
 
   bool doItSmart1 = (clever && (digit1 == 1) && (digit2 != 1));
   bool doItSmart2 = (clever && (digit3 == 1) && (digit4 != 1));
@@ -118,11 +118,11 @@ void updateDisplay() {
   //Serial.println("update display");
 
   Time localTime = getLocalTime();
-  Serial.printf("%d-%d-%d %d:%d:%d\n", localTime.year, localTime.month, localTime.day, localTime.hour, localTime.minute, localTime.second);
+  //Serial.printf("%d-%d-%d %d:%d:%d\n", localTime.year, localTime.month, localTime.day, localTime.hour, localTime.minute, localTime.second);
 
   bool secondLedsOn = true;
   if (config.second_blinking) {
-    secondLedsOn = localTime.second %2 == 0; // turn second leds on and off every second
+    secondLedsOn = (millis() % 1000) > 500; // // turn second leds on and off in every seconds
   }
 
   bool clever = config.clever;
