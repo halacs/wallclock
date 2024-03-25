@@ -17,6 +17,7 @@ WiFiManagerParameter second_blinking;
 WiFiManagerParameter clever;
 WiFiManagerParameter leading_zeros;
 WiFiManagerParameter brightness;
+WiFiManagerParameter auto_brightness;
 
 const char *configFilename = "/halclock.conf";   // <- SD library uses 8.3 filenames
 Config config;                                   // <- global configuration object
@@ -68,6 +69,7 @@ void loadConfiguration(const char *filename, Config &config) {
           config.second_blinking = strcmp(doc["second_blinking"] | second_blinking_default_char, "true") == 0;
           config.clever = strcmp(doc["clever"] | clever_numbering_default_char, "true") == 0;
           config.leading_zeros = strcmp(doc["leading_zeros"] | leading_zeros_default_char, "true") == 0;
+          config.auto_brightness = strcmp(doc["auto_brightness"] | auto_brightness_default_char, "true") == 0;          
           config.brightness = atoi(doc["brightness"] | brightness_default_char);
         } else {
           Serial.println(F("Failed to read file, using default configuration"));
@@ -96,6 +98,7 @@ void loadConfiguration(const char *filename, Config &config) {
       config.leading_zeros = leading_zeros_default;
       config.clever = clever_numbering_default;
       config.second_blinking = second_blinking_default;
+      config.auto_brightness = auto_brightness_default;
 
       Serial.println("Defaults loaded");
     }
@@ -135,6 +138,7 @@ void saveConfiguration(const char *filename, const Config &config) {
     doc["timezone"] = config.timezone;
     doc["second_blinking"] = config.second_blinking ? "true" : "false";
     doc["leading_zeros"] = config.leading_zeros ? "true" : "false";
+    doc["auto_brightness"] = config.auto_brightness ? "true" : "false";
 
     char tmp_brightness[5];
     itoa(config.brightness, tmp_brightness, 10);
@@ -174,6 +178,7 @@ void saveParamsCallback () {
   config.second_blinking = strcmp(second_blinking.getValue(), "1") == 0;
   config.clever = strcmp(clever.getValue(), "1") == 0;
   config.leading_zeros = strcmp(leading_zeros.getValue(), "1") == 0;
+  config.auto_brightness = strcmp(auto_brightness.getValue(), "1") == 0;
   int brightness_tmp = atoi(brightness.getValue());
   if (brightness_tmp > 255) {
     Serial.printf("New brightness value too high: %d. Set to 255.", brightness_tmp);
@@ -222,6 +227,12 @@ void menuSetup() {
     new (&leading_zeros) WiFiManagerParameter("leading_zeros", "Leading zeros", "1", customFieldLength,"placeholder=\"Custom Field Placeholder\" type=\"checkbox\"", WFM_LABEL_AFTER);
   }
 
+  if (config.auto_brightness) {
+    new (&auto_brightness) WiFiManagerParameter("auto_brightness", "Auto brightness", "1", customFieldLength,"placeholder=\"Custom Field Placeholder\" type=\"checkbox\" checked", WFM_LABEL_AFTER);
+  } else {
+    new (&auto_brightness) WiFiManagerParameter("auto_brightness", "Auto brightness", "1", customFieldLength,"placeholder=\"Custom Field Placeholder\" type=\"checkbox\"", WFM_LABEL_AFTER);
+  }
+
   new (&device_name) WiFiManagerParameter("DeviceName", "Device name:", config.device_name, sizeof(config.device_name));
   new (&ntp_server) WiFiManagerParameter("NTPserver", "NTP server:", config.ntp_server, sizeof(config.ntp_server));
   new (&time_zone) WiFiManagerParameter("TimeZone", "Time zone:", config.timezone, sizeof(config.timezone));
@@ -237,6 +248,7 @@ void menuSetup() {
   wm.addParameter(&second_blinking);
   wm.addParameter(&clever);
   wm.addParameter(&leading_zeros);
+  wm.addParameter(&auto_brightness);  
   
   //wm.setConfigPortalBlocking(false);
   wm.setSaveParamsCallback(saveParamsCallback);
@@ -386,7 +398,7 @@ void setup() {
   //WiFiManager wm;
 
   loadConfiguration(configFilename, config);
-  Serial.printf("--------------------\nTimeZone: %s\nNTP Server: %s\nDevice name: %s\nClever: %d\nSecond blinking: %d\nbrightness: %d\nLeading zeros: %d\n--------------------\n" ,config.timezone, config.ntp_server, config.device_name, config.clever, config.second_blinking, config.brightness, config.leading_zeros);
+  Serial.printf("--------------------\nTimeZone: %s\nNTP Server: %s\nDevice name: %s\nClever: %d\nSecond blinking: %d\nbrightness: %d\nLeading zeros: %d\nAuto brightness: %d\n--------------------\n" ,config.timezone, config.ntp_server, config.device_name, config.clever, config.second_blinking, config.brightness, config.leading_zeros, config.auto_brightness);
 
   displaySetup(); // initialize display first to be able to show messages there
   syncTimeSetup();
