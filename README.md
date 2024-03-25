@@ -15,9 +15,9 @@ It is worth to change factory firmware on your clock under the name of "Baiyangs
 * [x] Static brightness control.
 * [x] Time zone management with automatic DST support.
 * [x] OTA of Arduino IDE. Password is the same as the name of the AP.
+* [x] Automatic brightness controll.
 * [ ] Drop down choice as time zone selector (instead of the current simple tex box)
 * [ ] Find out why firmware update via the web UI doesn't work.
-* [ ] Automatic brightness controll.
 * [ ] Password protected web UI.
 * [ ] MQTT client capabilities
 * [ ] Syslog capabilities.

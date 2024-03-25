@@ -28,8 +28,24 @@ void allDigitsToStorageRegisters() {
   digitalWrite(SR_RCLK, LOW);
 }
 
+/*
+Gives back value of manual brightness.
+Value can be used directly on the HW so it is already inverted.
+*/
+int sensorBridghtness() {
+  int sensorValue = analogRead(A0);
+  int brightness_level = sensorValue / 4;
+  brightness_level = brightness_level > auto_brightness_minimum_light ? auto_brightness_minimum_light : brightness_level; // max 245 to maintain a minimum brightness
+  //Serial.printf("sensorValue=%d    -    brightness_level=%d\n",sensorValue,brightness_level);  
+  return brightness_level;
+}
+
 void enableDisplay(bool enabled) {
-  const int brightness_level = 255-config.brightness;
+  int brightness_level = 255-config.brightness; // manual brightness by default
+
+  if (config.auto_brightness) {
+    brightness_level = sensorBridghtness();
+  }
 
   if (enabled) {
     //digitalWrite(SR_OE, LOW);              // inverted
@@ -97,7 +113,7 @@ void sendByte(byte digitn, bool second, bool leadingDigit, bool clever) {
 }
 
 void show(byte digit1, byte digit2, byte digit3, byte digit4, bool second, bool clever) {
-  Serial.printf("Writing to display: %d%d:%d%d (SECOND %s)\n", digit1, digit2, digit3, digit4, second ? "ON" : "OFF");
+  //Serial.printf("Writing to display: %d%d:%d%d (SECOND %s)\n", digit1, digit2, digit3, digit4, second ? "ON" : "OFF");
 
   bool doItSmart1 = (clever && (digit1 == 1) && (digit2 != 1));
   bool doItSmart2 = (clever && (digit3 == 1) && (digit4 != 1));

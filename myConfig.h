@@ -18,6 +18,7 @@ struct Config {
   bool clever;
   bool second_blinking;
   byte brightness;
+  bool auto_brightness;
 };
 
 #define device_name_default "HalClock"
@@ -31,6 +32,9 @@ struct Config {
 #define clever_numbering_default_char "true"
 #define leading_zeros_default true
 #define leading_zeros_default_char "true"
+#define auto_brightness_default true
+#define auto_brightness_default_char "true"
+#define auto_brightness_minimum_light 245
 
 /*
 
