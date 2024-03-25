@@ -192,7 +192,8 @@ void saveParamsCallback () {
   
   saveConfiguration(configFilename, config);
   Serial.println("Trigger ESP restart");
-  ESP.restart();
+  //ESP.restart();
+  wm.reboot();
 }
 
 void menuSetup() {
@@ -288,9 +289,9 @@ void wifiSetup(char* web_title) {
   wm.setHostname(getAPName());
   wm.setConnectRetries(5);
   
-  // TODO web portal needs to be enabled even after initial wifi config
   wm.setConfigPortalBlocking(false);
   wm.setWiFiAutoReconnect(true);
+  wm.setDisableConfigPortal(false);
 
   Serial.printf("AP name: %s\nAP password: %s\n", getAPName(), getAPPassword());
   bool res = wm.autoConnect(getAPName(), getAPPassword()); // password protected ap
