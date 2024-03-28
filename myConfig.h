@@ -11,6 +11,7 @@
 // used during the serialization phase. See:
 // https://arduinojson.org/v6/faq/why-must-i-create-a-separate-config-object/
 struct Config {
+  char syslog_server[64];
   char device_name[64];
   char ntp_server[64];
   char timezone[64];
@@ -24,6 +25,7 @@ struct Config {
 #define device_name_default "HalClock"
 #define ntp_server_default "hu.pool.ntp.org"
 #define timezone_default "Europe/Budapest"
+#define syslog_server_default "192.168.0.6"
 #define brightness_default 255
 #define brightness_default_char "255"
 #define second_blinking_default false
@@ -35,6 +37,8 @@ struct Config {
 #define auto_brightness_default true
 #define auto_brightness_default_char "true"
 #define auto_brightness_minimum_light 245
+
+#define APPLICATION_NAME "HalClock"
 
 /*
 
@@ -54,5 +58,8 @@ each positive transition of the shift register clock (SHCP).
 
 */
 #define SR_SER 13   // serial input (DS)
+
+char* getAPName();
+char* getAPPassword();
 
 #endif

@@ -2,6 +2,7 @@
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 #include "myTime.h"
 #include "myDisplay.h"
+#include "myLogging.h"
 #include <LittleFS.h>
 #include <ArduinoJson.h>  // https://arduinojson.org/v6/example/config/
 #include "myConfig.h"
@@ -18,6 +19,7 @@ WiFiManagerParameter clever;
 WiFiManagerParameter leading_zeros;
 WiFiManagerParameter brightness;
 WiFiManagerParameter auto_brightness;
+WiFiManagerParameter syslog_server;
 
 const char *configFilename = "/halclock.conf";   // <- SD library uses 8.3 filenames
 Config config;                                   // <- global configuration object
@@ -28,19 +30,19 @@ Config config;                                   // <- global configuration obje
 void loadConfiguration(const char *filename, Config &config) {
   // Open file for reading
   if (LittleFS.begin()) {
-    Serial.println("mounted file system");
+    debugLog("mounted file system");
     if (LittleFS.exists(filename)) {
       //file exists, reading and loading
-      Serial.println("reading config file");
+      debugLog("reading config file");
       File file = LittleFS.open(filename, "r");
       if (file) {
-        Serial.println("opened config file");
+        debugLog("opened config file");
 
         // because of debug purposes send full content of config file to serial
         /*
         File file2 = LittleFS.open(filename, "r");
         String data = file2.readString();
-        Serial.println(data);
+        debugLog(data);
         file2.close();
         */
 
@@ -52,7 +54,7 @@ void loadConfiguration(const char *filename, Config &config) {
         // Deserialize the JSON document
         DeserializationError error = deserializeJson(doc, file);
         if (!error) {
-          Serial.println("Deserialization OK");
+          debugLog("Deserialization OK");
           
           strlcpy(config.device_name,                         // <- destination
                   doc["device_name"] | device_name_default,            // <- source
@@ -66,21 +68,25 @@ void loadConfiguration(const char *filename, Config &config) {
                   doc["timezone"] | timezone_default,       // <- source
                   sizeof(config.ntp_server));                // <- destination's capacity
 
+          strlcpy(config.syslog_server,                           // <- destination
+                  doc["syslog_server"] | syslog_server_default,       // <- source
+                  sizeof(config.syslog_server));                // <- destination's capacity
+
           config.second_blinking = strcmp(doc["second_blinking"] | second_blinking_default_char, "true") == 0;
           config.clever = strcmp(doc["clever"] | clever_numbering_default_char, "true") == 0;
           config.leading_zeros = strcmp(doc["leading_zeros"] | leading_zeros_default_char, "true") == 0;
           config.auto_brightness = strcmp(doc["auto_brightness"] | auto_brightness_default_char, "true") == 0;          
           config.brightness = atoi(doc["brightness"] | brightness_default_char);
         } else {
-          Serial.println(F("Failed to read file, using default configuration"));
+          debugLog("Failed to read file, using default configuration");
         }
         // Close the file (Curiously, File's destructor doesn't close the file)
         file.close();
        } else {
-      Serial.println("cannot open file");
+      debugLog("cannot open file");
     }
     } else {
-      Serial.println("file not found");
+      debugLog("file not found");
 
       // Load defaults  
       strlcpy(config.device_name,                          // <- destination
@@ -90,20 +96,25 @@ void loadConfiguration(const char *filename, Config &config) {
       strlcpy(config.ntp_server,                          // <- destination
                     ntp_server_default,                    // <- source
                     sizeof(config.ntp_server));                // <- destination's capacity
+
       strlcpy(config.timezone,                           // <- destination
                     timezone_default,                   // <- source
                     sizeof(config.timezone));                 // <- destination's capacity
-        
+
+      strlcpy(config.syslog_server,                           // <- destination
+                    syslog_server_default,                   // <- source
+                    sizeof(config.syslog_server));                 // <- destination's capacity
+
       config.brightness = brightness_default;
       config.leading_zeros = leading_zeros_default;
       config.clever = clever_numbering_default;
       config.second_blinking = second_blinking_default;
       config.auto_brightness = auto_brightness_default;
-
-      Serial.println("Defaults loaded");
+      
+      infoLog("Defaults loaded");
     }
   } else {
-    Serial.println("failed to mount FS");
+    debugLog("failed to mount FS");
   }
 
 }
@@ -112,10 +123,10 @@ void loadConfiguration(const char *filename, Config &config) {
  Saves the configuration to a file
 */
 void saveConfiguration(const char *filename, const Config &config) {
-  Serial.println("Saving configuration");
+  infoLog("Saving configuration");
 
   if (LittleFS.begin()) {
-    Serial.println("mounted file system");
+    debugLog("mounted file system");
 
     // Delete existing file, otherwise the configuration is appended to the file
     LittleFS.remove(filename);
@@ -123,7 +134,7 @@ void saveConfiguration(const char *filename, const Config &config) {
     // Open file for writing
     File file = LittleFS.open(filename, "w");
     if (!file) {
-      Serial.println(F("Failed to create file"));
+      errorLog("Failed to create file");
       return;
     }
 
@@ -136,6 +147,7 @@ void saveConfiguration(const char *filename, const Config &config) {
     doc["device_name"] = config.device_name;
     doc["ntp_server"] = config.ntp_server;
     doc["timezone"] = config.timezone;
+    doc["syslog_server"] = config.syslog_server;
     doc["second_blinking"] = config.second_blinking ? "true" : "false";
     doc["leading_zeros"] = config.leading_zeros ? "true" : "false";
     doc["auto_brightness"] = config.auto_brightness ? "true" : "false";
@@ -146,7 +158,7 @@ void saveConfiguration(const char *filename, const Config &config) {
     
     // Serialize JSON to file
     if (serializeJson(doc, file) == 0) {
-      Serial.println(F("Failed to write to file"));
+      errorLog("Failed to write to file");
     }
 
     serializeJson(doc, Serial);
@@ -155,7 +167,7 @@ void saveConfiguration(const char *filename, const Config &config) {
     // Close the file
     file.close();
   } else {
-    Serial.println("failed to mount FS");
+    errorLog("failed to mount FS");
   }
 }
 
@@ -174,6 +186,10 @@ void saveParamsCallback () {
   strlcpy(config.timezone,                         // <- destination
                 time_zone.getValue(),              // <- source
                 sizeof(config.timezone));          // <- destination's capacity
+
+  strlcpy(config.syslog_server,                         // <- destination
+                syslog_server.getValue(),              // <- source
+                sizeof(config.syslog_server));          // <- destination's capacity                
   
   config.second_blinking = strcmp(second_blinking.getValue(), "1") == 0;
   config.clever = strcmp(clever.getValue(), "1") == 0;
@@ -181,17 +197,17 @@ void saveParamsCallback () {
   config.auto_brightness = strcmp(auto_brightness.getValue(), "1") == 0;
   int brightness_tmp = atoi(brightness.getValue());
   if (brightness_tmp > 255) {
-    Serial.printf("New brightness value too high: %d. Set to 255.", brightness_tmp);
+    errorLog("New brightness value too high: %d. Set to 255.", brightness_tmp);
     brightness_tmp = 255;
   }
   if (brightness_tmp < 1) {
-    Serial.printf("New brightness value too low: %d. Set to 1.", brightness_tmp);
+    errorLog("New brightness value too low: %d. Set to 1.", brightness_tmp);
     brightness_tmp = 1;
   }
   config.brightness = (byte)brightness_tmp;
   
   saveConfiguration(configFilename, config);
-  Serial.println("Trigger ESP restart");
+  infoLog("Trigger ESP restart");
   //ESP.restart();
   wm.reboot();
 }
@@ -237,6 +253,7 @@ void menuSetup() {
   new (&device_name) WiFiManagerParameter("DeviceName", "Device name:", config.device_name, sizeof(config.device_name));
   new (&ntp_server) WiFiManagerParameter("NTPserver", "NTP server:", config.ntp_server, sizeof(config.ntp_server));
   new (&time_zone) WiFiManagerParameter("TimeZone", "Time zone:", config.timezone, sizeof(config.timezone));
+  new (&syslog_server) WiFiManagerParameter("syslog_server", "Syslog server:", config.syslog_server, sizeof(config.syslog_server));
 
   char tmp_brightness[5];
   itoa(config.brightness, tmp_brightness, 10);
@@ -245,6 +262,7 @@ void menuSetup() {
   wm.addParameter(&device_name);
   wm.addParameter(&ntp_server);
   wm.addParameter(&time_zone);
+  wm.addParameter(&syslog_server);
   wm.addParameter(&brightness);
   wm.addParameter(&second_blinking);
   wm.addParameter(&clever);
@@ -253,24 +271,6 @@ void menuSetup() {
   
   //wm.setConfigPortalBlocking(false);
   wm.setSaveParamsCallback(saveParamsCallback);
-}
-
-char* hostnameSingleton = 0;
-char* getAPName(){
-  if (hostnameSingleton == 0) {
-    String hostString = String(WIFI_getChipId(),HEX);
-    hostString.toUpperCase();
-    String name = String("halclock") + hostString;
-
-    hostnameSingleton = (char*)malloc(name.length() + 1);
-    memcpy(hostnameSingleton, name.c_str(), name.length() + 1);
-  }
-
-  return hostnameSingleton;
-}
-
-char* getAPPassword() {
-  return "password";
 }
 
 void wifiLoop() {
@@ -283,7 +283,7 @@ void wifiSetup(char* web_title) {
   // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
   // then goes into a blocking loop awaiting configuration and will return success result
 
-  Serial.printf("Host and AP name: %s\n", getAPName());
+  infoLog("Host and AP name: %s\n", getAPName());
 
   wm.setTitle(web_title);
   wm.setHostname(getAPName());
@@ -291,23 +291,23 @@ void wifiSetup(char* web_title) {
   
   wm.setConfigPortalBlocking(false);
   wm.setWiFiAutoReconnect(true);
-  wm.setDisableConfigPortal(false);
+  //wm.setDisableConfigPortal(false);
 
-  Serial.printf("AP name: %s\nAP password: %s\n", getAPName(), getAPPassword());
+  infoLog("AP name: %s --- AP password: %s", getAPName(), getAPPassword());
   bool res = wm.autoConnect(getAPName(), getAPPassword()); // password protected ap
 
   if(!res) {
-      Serial.println("Failed to connect");
+      errorLog("Failed to connect");
       // ESP.restart();
   } else {
       //if you get here you have connected to the WiFi    
-      Serial.println("Connected to WiFi :)");
+      infoLog("Connected to WiFi :)");
       wm.startWebPortal();
   }
 }
 
 void OTASetup() {
-  Serial.println("Configuring OTA");
+  infoLog("Configuring OTA");
 
   // Port defaults to 8266
   // ArduinoOTA.setPort(8266);
@@ -320,7 +320,7 @@ void OTASetup() {
   // ArduinoOTA.setPassword("admin");
   char* otaPassword = getAPName();
   ArduinoOTA.setPassword(otaPassword);
-  Serial.printf("OTA password set to %s\n", otaPassword);
+  infoLog("OTA password set to %s\n", otaPassword);
 
   // Password can be set with it's md5 value as well
   // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
@@ -335,56 +335,67 @@ void OTASetup() {
     }
 
     // NOTE: if updating FS this would be the place to unmount FS using FS.end()
-    Serial.println("Start updating " + type);
+    infoLog(String("Start updating " + type).c_str());
   });
   ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
+    infoLog("End");
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    wdt_reset();  /* Reset the watchdog */
+    infoLog("Progress: %.2f", (progress / (total / 100.0)));
   });
   ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
+    errorLog("Error[%u]: ", error);
     if (error == OTA_AUTH_ERROR) {
-      Serial.println("Auth Failed");
+      errorLog("Auth Failed");
     } else if (error == OTA_BEGIN_ERROR) {
-      Serial.println("Begin Failed");
+      errorLog("Begin Failed");
     } else if (error == OTA_CONNECT_ERROR) {
-      Serial.println("Connect Failed");
+      errorLog("Connect Failed");
     } else if (error == OTA_RECEIVE_ERROR) {
-      Serial.println("Receive Failed");
+      errorLog("Receive Failed");
     } else if (error == OTA_END_ERROR) {
-      Serial.println("End Failed");
+      errorLog("End Failed");
     }
   });
   
   ArduinoOTA.begin();
 
-  Serial.println("OTA is ready");
+  infoLog("OTA is ready");
 }
 
-/*
-// int sprintf(char *str, const char *format, ...)
-void logging(char* severity, char* message) {
-  Serial.printf("[%s] %s\n", severity, message);
+void logResetReason() {
+  rst_info *resetInfo;
+  resetInfo = ESP.getResetInfoPtr();
+  char* reasonStr;  
+  switch (resetInfo->reason) {
+    case REASON_DEFAULT_RST:
+      reasonStr = "REASON_DEFAULT_RST: normal startup by power on";
+      break;
+    case REASON_WDT_RST:
+      reasonStr = "REASON_WDT_RST: hardware watch dog reset";
+      break;
+    case REASON_EXCEPTION_RST:
+      reasonStr = "REASON_EXCEPTION_RST: exception reset, GPIO status won’t change";
+      break;
+    case REASON_SOFT_WDT_RST:
+      reasonStr = "REASON_SOFT_WDT_RST: software watch dog reset, GPIO status won’t change";
+      break;
+    case REASON_SOFT_RESTART:
+      reasonStr = "REASON_SOFT_RESTART: software restart, system_restart, GPIO status won’t change";
+      break;
+    case REASON_DEEP_SLEEP_AWAKE:
+      reasonStr = "REASON_DEEP_SLEEP_AWAKE: wake up from deep-sleep";
+      break;
+    case REASON_EXT_SYS_RST:
+      reasonStr = "REASON_EXT_SYS_RST: external system reset";
+      break;
+    default:
+      reasonStr = "???";
+      break;
+    }
+  infoLog("Reset reason: %s", reasonStr);
 }
-
-// int sprintf(char *str, const char *format, ...)
-void info(char* message) {
-  logging("INFO", message);
-}
-
-// int sprintf(char *str, const char *format, ...)
-void warning(char* message) {
-  logging("WARNING", message);
-}
-
-// int sprintf(char *str, const char *format, ...)
-void error(char* message) {
-  logging("ERROR", message);
-  Serial.printf(const char *format, ...)
-}
-*/
 
 void setup() {
   // WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
@@ -393,13 +404,13 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
 
-  Serial.println("Booting");
- 
+  infoLog("Booting");
+  
   //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
   //WiFiManager wm;
 
   loadConfiguration(configFilename, config);
-  Serial.printf("--------------------\nTimeZone: %s\nNTP Server: %s\nDevice name: %s\nClever: %d\nSecond blinking: %d\nbrightness: %d\nLeading zeros: %d\nAuto brightness: %d\n--------------------\n" ,config.timezone, config.ntp_server, config.device_name, config.clever, config.second_blinking, config.brightness, config.leading_zeros, config.auto_brightness);
+  infoLog("--------------------\nTimeZone: %s\nNTP Server: %s\nDevice name: %s\nClever: %d\nSecond blinking: %d\nbrightness: %d\nLeading zeros: %d\nAuto brightness: %d\n--------------------\n" ,config.timezone, config.ntp_server, config.device_name, config.clever, config.second_blinking, config.brightness, config.leading_zeros, config.auto_brightness);
 
   displaySetup(); // initialize display first to be able to show messages there
   syncTimeSetup();
@@ -413,6 +424,12 @@ void setup() {
   // reset settings - wipe stored credentials for testing
   // these are stored by the esp library
   // wm.resetSettings();
+
+  logResetReason();
+
+  wdt_disable();        /* Disable the watchdog and wait for more than 2 seconds */
+  delay(3000);          /* Done so that the Arduino doesn't keep resetting infinitely in case of wrong configuration */
+  wdt_enable(WDTO_8S);  /* Enable the watchdog with a timeout of 8 seconds */
 }
 
 void loop() {
@@ -422,4 +439,5 @@ void loop() {
   #ifdef ENABLE_OTA
     ArduinoOTA.handle();
   #endif
+  wdt_reset();  /* Reset the watchdog */
 }

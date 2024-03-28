@@ -65,13 +65,13 @@ void syncTimeSetup() {
   wireInterface.begin();
 
   dsClock.setup();
-  
-  Serial.printf("NTP server: %s\n", ntpClock.getServer());
+
+  //Serial.printf("NTP server: %s\n", ntpClock.getServer());
   ntpClock.setup();
   if (ntpClock.isSetup()) {
-    Serial.println("NTP setup OK.");
+    infoLog("NTP setup OK.");
   } else {    
-    Serial.println("Connection failed... try again.");
+    errorLog("Connection failed... try again.");
   }
 
   systemClock->setup();

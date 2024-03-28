@@ -1,8 +1,12 @@
 #ifndef MY_LOGGING_H
 #define MY_LOGGING_H
-/*
-extern void info(char* message);
-extern void warning(char* message);
-extern void error(char* message);
-*/
+
+void debugLog(const char* format, ...);
+
+void infoLog(const char* format, ...);
+
+void warningLog(const char* format, ...);
+
+void errorLog(const char* format, ...);
+
 #endif
