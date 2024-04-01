@@ -95,6 +95,8 @@ It was extracted the way as shown on the below screenshot.
 ## Load Factory Default
 ![loadfactorydefault](docs/images/factory_firmware/load_factory_defaults.png)
 
+## Entropy analysis
+![entropy](docs/images/factory_firmware/binwalk_entropy.png)
 # Contribution
 
 Feel free to open pull request against my repository.
