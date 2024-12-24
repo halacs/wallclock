@@ -1,5 +1,7 @@
 **ABSOLUTELY NO WARRANTY! USE AT YOUR OWN RISK!**
 
+You can find my blog post about this project [here](https://www.halacs.hu/baiyangshu-1902-wifi-clock-k2-02).
+
 # Summary
 
 It is worth to change factory firmware on your clock under the name of "Baiyangshu 1902 Wifi Clock K2 02" if the always on Wifi access point bothers you too or the missing automatic day light saving capability or if you just simply want to use an open-source software you can extend with any features whenever you need something new.
