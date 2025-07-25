@@ -1,3 +1,5 @@
+<a href="https://www.buymeacoffee.com/halacs" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
 **ABSOLUTELY NO WARRANTY! USE AT YOUR OWN RISK!**
 
 You can find my blog post about this project [here](https://www.halacs.hu/baiyangshu-1902-wifi-clock-k2-02).
