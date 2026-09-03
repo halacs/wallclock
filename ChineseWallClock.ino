@@ -18,11 +18,16 @@ WiFiManagerParameter second_blinking;
 WiFiManagerParameter clever;
 WiFiManagerParameter leading_zeros;
 WiFiManagerParameter brightness;
+WiFiManagerParameter brightnessMin;
+WiFiManagerParameter brightnessMax;
 WiFiManagerParameter auto_brightness;
 WiFiManagerParameter syslog_server;
 
 const char *configFilename = "/halclock.conf";   // <- SD library uses 8.3 filenames
 Config config;                                   // <- global configuration object
+
+bool isDisplayManuallyEnabled = true;
+ESP8266WebServer server(2020);
 
 /*
  Loads the configuration from a file
@@ -77,6 +82,8 @@ void loadConfiguration(const char *filename, Config &config) {
           config.leading_zeros = strcmp(doc["leading_zeros"] | leading_zeros_default_char, "true") == 0;
           config.auto_brightness = strcmp(doc["auto_brightness"] | auto_brightness_default_char, "true") == 0;          
           config.brightness = atoi(doc["brightness"] | brightness_default_char);
+          config.brightnessMin = atoi(doc["brightnessMin"] | brightnessMin_default_char);
+          config.brightnessMax = atoi(doc["brightnessMax"] | brightnessMax_default_char);
         } else {
           debugLog("Failed to read file, using default configuration");
         }
@@ -106,6 +113,8 @@ void loadConfiguration(const char *filename, Config &config) {
                     sizeof(config.syslog_server));                 // <- destination's capacity
 
       config.brightness = brightness_default;
+      config.brightnessMin = brightnessMin_default;
+      config.brightnessMax = brightnessMax_default;
       config.leading_zeros = leading_zeros_default;
       config.clever = clever_numbering_default;
       config.second_blinking = second_blinking_default;
@@ -156,6 +165,15 @@ void saveConfiguration(const char *filename, const Config &config) {
     itoa(config.brightness, tmp_brightness, 10);
     doc["brightness"] = tmp_brightness;
     
+    char tmp_brightnessMin[5];
+    itoa(config.brightnessMin, tmp_brightnessMin, 10);
+    doc["brightnessMin"] = tmp_brightnessMin;
+
+    char tmp_brightnessMax[5];
+    itoa(config.brightnessMax, tmp_brightnessMax, 10);
+    doc["brightnessMax"] = tmp_brightnessMax;
+
+
     // Serialize JSON to file
     if (serializeJson(doc, file) == 0) {
       errorLog("Failed to write to file");
@@ -195,6 +213,8 @@ void saveParamsCallback () {
   config.clever = strcmp(clever.getValue(), "1") == 0;
   config.leading_zeros = strcmp(leading_zeros.getValue(), "1") == 0;
   config.auto_brightness = strcmp(auto_brightness.getValue(), "1") == 0;
+
+  // fixed brightness
   int brightness_tmp = atoi(brightness.getValue());
   if (brightness_tmp > 255) {
     errorLog("New brightness value too high: %d. Set to 255.", brightness_tmp);
@@ -206,6 +226,31 @@ void saveParamsCallback () {
   }
   config.brightness = (byte)brightness_tmp;
   
+  // brightnessMin
+  int brightnessMin_tmp = atoi(brightnessMin.getValue());
+  if (brightnessMin_tmp > 255) {
+    errorLog("New brightnessMin value too high: %d. Set to 255.", brightnessMin_tmp);
+    brightnessMin_tmp = 255;
+  }
+  if (brightnessMin_tmp < 1) {
+    errorLog("New brightnessMin value too low: %d. Set to 1.", brightnessMin_tmp);
+    brightnessMin_tmp = 1;
+  }
+  config.brightnessMin = (byte)brightnessMin_tmp;
+
+  // brightnessMax
+  int brightnessMax_tmp = atoi(brightnessMax.getValue());
+  if (brightnessMax_tmp > 255) {
+    errorLog("New brightnessMax value too high: %d. Set to 255.", brightnessMax_tmp);
+    brightnessMax_tmp = 255;
+  }
+  if (brightnessMax_tmp < 1) {
+    errorLog("New brightnessMax value too low: %d. Set to 1.", brightnessMax_tmp);
+    brightnessMax_tmp = 1;
+  }
+  config.brightnessMax = (byte)brightnessMax_tmp;
+
+  // Save config
   saveConfiguration(configFilename, config);
   infoLog("Trigger ESP restart");
   //ESP.restart();
@@ -259,15 +304,25 @@ void menuSetup() {
   itoa(config.brightness, tmp_brightness, 10);
   new (&brightness) WiFiManagerParameter("brightness", "Brightness:", tmp_brightness, sizeof(tmp_brightness), "placeholder=\"Custom Field Placeholder\" type=\"number\" min=\"0\" max=\"255\"");
   
+  char tmp_brightnessMin[5];
+  itoa(config.brightnessMin, tmp_brightnessMin, 10);
+  new (&brightnessMin) WiFiManagerParameter("brightnessMin", "BrightnessMin:", tmp_brightnessMin, sizeof(tmp_brightnessMin), "placeholder=\"Custom Field Placeholder\" type=\"number\" min=\"0\" max=\"255\"");
+
+  char tmp_brightnessMax[5];
+  itoa(config.brightnessMax, tmp_brightnessMax, 10);
+  new (&brightnessMax) WiFiManagerParameter("brightnessMax", "BrightnessMax:", tmp_brightnessMax, sizeof(tmp_brightnessMax), "placeholder=\"Custom Field Placeholder\" type=\"number\" min=\"0\" max=\"255\"");
+  
   wm.addParameter(&device_name);
   wm.addParameter(&ntp_server);
   wm.addParameter(&time_zone);
   wm.addParameter(&syslog_server);
   wm.addParameter(&brightness);
+  wm.addParameter(&brightnessMin);
+  wm.addParameter(&brightnessMax);
   wm.addParameter(&second_blinking);
   wm.addParameter(&clever);
   wm.addParameter(&leading_zeros);
-  wm.addParameter(&auto_brightness);  
+  wm.addParameter(&auto_brightness);
   
   //wm.setConfigPortalBlocking(false);
   wm.setSaveParamsCallback(saveParamsCallback);
@@ -410,7 +465,7 @@ void setup() {
   //WiFiManager wm;
 
   loadConfiguration(configFilename, config);
-  infoLog("--------------------\nTimeZone: %s\nNTP Server: %s\nDevice name: %s\nClever: %d\nSecond blinking: %d\nbrightness: %d\nLeading zeros: %d\nAuto brightness: %d\n--------------------\n" ,config.timezone, config.ntp_server, config.device_name, config.clever, config.second_blinking, config.brightness, config.leading_zeros, config.auto_brightness);
+  infoLog("--------------------\nTimeZone: %s\nNTP Server: %s\nDevice name: %s\nClever: %d\nSecond blinking: %d\nbrightness: %d\nbrightnessMin: %d\nbrightnessMax: %d\nLeading zeros: %d\nAuto brightness: %d\n--------------------\n" ,config.timezone, config.ntp_server, config.device_name, config.clever, config.second_blinking, config.brightness, config.brightnessMin, config.brightnessMax, config.leading_zeros, config.auto_brightness);
 
   displaySetup(); // initialize display first to be able to show messages there
   syncTimeSetup();
@@ -427,6 +482,31 @@ void setup() {
 
   logResetReason();
 
+  server.on("/api/display", HTTP_GET, []() {
+        if (server.hasArg("state")) {
+            String state = server.arg("state");
+            if (state == "on") {
+                isDisplayManuallyEnabled = true;
+                // Turn off display logic here
+                server.send(200, "application/json", "{\"status\":\"success\", \"display\":\"on\"}");
+            } else if (state == "off") {
+                isDisplayManuallyEnabled = false;
+                // Turn on display logic here
+                server.send(200, "application/json", "{\"status\":\"success\", \"display\":\"off\"}");
+            } else {
+                server.send(400, "application/json", "{\"error\":\"Invalid state value.\"}");
+            }
+        } else {
+          if (isDisplayManuallyEnabled) {
+            server.send(200, "application/json", "{\"status\":\"missing state parameter\", \"display\":\"on\"}");
+          } else
+          {
+            server.send(200, "application/json", "{\"status\":\"missing state parameter\", \"display\":\"off\"}");
+          }
+        }
+    });
+  server.begin();
+
   wdt_disable();        /* Disable the watchdog and wait for more than 2 seconds */
   delay(3000);          /* Done so that the Arduino doesn't keep resetting infinitely in case of wrong configuration */
   wdt_enable(WDTO_8S);  /* Enable the watchdog with a timeout of 8 seconds */
@@ -439,5 +519,8 @@ void loop() {
   #ifdef ENABLE_OTA
     ArduinoOTA.handle();
   #endif
+  
+  server.handleClient();  // Handle incoming HTTP requests
+
   wdt_reset();  /* Reset the watchdog */
 }

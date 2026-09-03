@@ -1,0 +1,13 @@
+startYear: 2000
+untilYear: 2100
+tzVersion: 2022g
+benchmarkAceTime: start
+benchmarkAceTime: zones=377
+benchmarkAceTime: count=12667200
+benchmarkAceTime: elapsedMillis 4030
+benchmarkAceTime: micros/iter 0.318
+benchmarkHinnantDate: start
+benchmarkHinnantDate: zones=377
+benchmarkHinnantDate: count=452400
+benchmarkHinnantDate: elapsedMillis 22166
+benchmarkHinnantDate: micros/iter 48.996

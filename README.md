@@ -57,8 +57,8 @@ After flashing your clock, at the first boot, WiFi AP turns on under the name of
 # Halacs's firmware
 
 ## My development environment
-* Ubuntu 22.04.4 LTS (jammy)
-* Arduino IDE 2.3.2
+* Ubuntu 24.04.4 LTS (jammy)
+* Arduino IDE 2.3.7
 * Wemos D1 mini as development test board
 
 ## Landing page
@@ -69,6 +69,29 @@ After flashing your clock, at the first boot, WiFi AP turns on under the name of
 
 ## Wifi
 ![wifi](docs/images/wifi.png)
+
+### REST API (Display Control)
+
+The clock exposes a simple REST API on port `2020` to manually control the display state. This is highly useful for integrating the clock into smart home systems like Home Assistant.
+
+**Important Note:** The display state is not persisted in the flash memory. After a power cycle or a reboot, the display will always default back to the `on` state.
+
+**Endpoint:** `GET http://<clock-ip>:2020/api/display`
+
+**Parameters:**
+* `state=off`: Turns the display completely dark.
+* `state=on`: Restores the display to its normal operation (including auto-brightness).
+* *(None)*: Querying the endpoint without parameters returns the current display status.
+
+**Example Usage:**
+* Turn display off: `http://192.168.1.50:2020/api/display?state=off`
+* Turn display on: `http://192.168.1.50:2020/api/display?state=on`
+* Check status: `http://192.168.1.50:2020/api/display`
+
+**JSON Responses:**
+* **Success:** `{"status":"success", "display":"on"}` or `{"status":"success", "display":"off"}`
+* **Status Check:** `{"status":"missing state parameter", "display":"on"}`
+* **Error:** `{"error":"Invalid state value."}`
 
 # Factory firmware
 

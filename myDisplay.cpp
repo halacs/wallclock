@@ -3,6 +3,7 @@
 #include "myConfig.h"
 
 extern Config config;
+extern int isDisplayManuallyEnabled;
 
 unsigned long displayMtime = 0;
 void syncDisplayScheduler() {
@@ -35,8 +36,9 @@ Value can be used directly on the HW so it is already inverted.
 int sensorBridghtness() {
   int sensorValue = analogRead(A0);
   int brightness_level = sensorValue / 4;
-  brightness_level = brightness_level > auto_brightness_minimum_light ? auto_brightness_minimum_light : brightness_level; // max 245 to maintain a minimum brightness
-  //Serial.printf("sensorValue=%d    -    brightness_level=%d\n",sensorValue,brightness_level);  
+  //brightness_level = brightness_level > auto_brightness_minimum_light ? auto_brightness_minimum_light : brightness_level; // max 245 to maintain a minimum brightness
+  brightness_level = brightness_level > 255-config.brightnessMin ? 255-config.brightnessMin : brightness_level;
+  //Serial.printf("sensorValue=%d    -    brightness_level=%d\n",sensorValue,brightness_level);
   return brightness_level;
 }
 
@@ -127,7 +129,8 @@ void show(byte digit1, byte digit2, byte digit3, byte digit4, bool second, bool 
   
   allDigitsToStorageRegisters();
 
-  enableDisplay(true);  // TODO this might not the best place to keep the display on especially because of the brightness control (to be implemented)
+  //enableDisplay(true);  // TODO this might not the best place to keep the display on especially because of the brightness control (to be implemented)
+  enableDisplay(isDisplayManuallyEnabled);
 }
 
 void updateDisplay() {
