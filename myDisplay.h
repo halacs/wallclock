@@ -54,5 +54,7 @@ byte const mappingClever[] = {
 void syncDisplayScheduler();
 void updateDisplay();
 void displaySetup();
+void enableDisplay(bool enabled);
+bool isDisplayEnabled();
 
 #endif

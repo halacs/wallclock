@@ -26,7 +26,6 @@ WiFiManagerParameter syslog_server;
 const char *configFilename = "/halclock.conf";   // <- SD library uses 8.3 filenames
 Config config;                                   // <- global configuration object
 
-bool isDisplayManuallyEnabled = true;
 ESP8266WebServer server(2020);
 
 /*
@@ -486,18 +485,16 @@ void setup() {
         if (server.hasArg("state")) {
             String state = server.arg("state");
             if (state == "on") {
-                isDisplayManuallyEnabled = true;
-                // Turn off display logic here
+                enableDisplay(true);
                 server.send(200, "application/json", "{\"status\":\"success\", \"display\":\"on\"}");
             } else if (state == "off") {
-                isDisplayManuallyEnabled = false;
-                // Turn on display logic here
+                enableDisplay(false);
                 server.send(200, "application/json", "{\"status\":\"success\", \"display\":\"off\"}");
             } else {
                 server.send(400, "application/json", "{\"error\":\"Invalid state value.\"}");
             }
         } else {
-          if (isDisplayManuallyEnabled) {
+          if (isDisplayEnabled()) {
             server.send(200, "application/json", "{\"status\":\"missing state parameter\", \"display\":\"on\"}");
           } else
           {

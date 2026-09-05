@@ -3,7 +3,7 @@
 #include "myConfig.h"
 
 extern Config config;
-extern int isDisplayManuallyEnabled;
+bool displayEnabled = true;
 
 unsigned long displayMtime = 0;
 void syncDisplayScheduler() {
@@ -43,13 +43,21 @@ int sensorBridghtness() {
 }
 
 void enableDisplay(bool enabled) {
+  displayEnabled = enabled;
+}
+
+bool isDisplayEnabled() {
+  return displayEnabled;
+}
+
+void setDisplayBrightness() {
   int brightness_level = 255-config.brightness; // manual brightness by default
 
   if (config.auto_brightness) {
     brightness_level = sensorBridghtness();
   }
 
-  if (enabled) {
+  if (displayEnabled) { // if the display is disabled, brightness must be set to fully dark
     //digitalWrite(SR_OE, LOW);              // inverted
     analogWrite(SR_OE, brightness_level);  // 0..255 - The higher value the softer brightness
   } else {
@@ -130,7 +138,7 @@ void show(byte digit1, byte digit2, byte digit3, byte digit4, bool second, bool 
   allDigitsToStorageRegisters();
 
   //enableDisplay(true);  // TODO this might not the best place to keep the display on especially because of the brightness control (to be implemented)
-  enableDisplay(isDisplayManuallyEnabled);
+  setDisplayBrightness();
 }
 
 void updateDisplay() {
